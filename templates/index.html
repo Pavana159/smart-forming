@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Farming AI – Your Farm, Smarter Every Day{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Banner -->
+    <div class="hero-banner mb-5">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="hero-tagline d-inline-block mb-2">
+                    <i class="bi bi-shield-check me-1"></i> Smart Agricultural Decision Support
+                </span>
+                <h1 class="display-5 text-white mb-3 fw-bold">Smart Farming AI</h1>
+                <p class="lead text-light mb-4" style="max-width: 650px; opacity: 0.95;">
+                    "Your Farm, Smarter Every Day." From laboratory soil testing and live meteorological forecast integration to ML crop recommendations and computer vision growth monitoring.
+                </p>
+                
+                <!-- The 4 Main Action Buttons requested in specification -->
+                <div class="d-flex flex-wrap gap-2 pt-2">
+                    <a href="{{ url_for('soil_report') }}" class="btn btn-agri btn-lg px-4 shadow">
+                        <i class="bi bi-layers-half me-2"></i> Soil Report
+                    </a>
+                    <a href="{{ url_for('weather') }}" class="btn btn-light btn-lg px-4 text-dark fw-bold shadow-sm">
+                        <i class="bi bi-cloud-sun me-2 text-warning"></i> Weather Conditions
+                    </a>
+                    <a href="{{ url_for('crop_recommendation') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-cpu me-2"></i> Crop Recommendation
+                    </a>
+                    <a href="{{ url_for('farms_list') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-journal-bookmark me-2"></i> Monitor My Crop
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block text-center">
+                <div class="p-3 bg-white bg-opacity-10 rounded-4 border border-light border-opacity-25 backdrop-blur shadow">
+                    <div class="text-white small text-uppercase mb-2 fw-semibold tracking-wider">System Live Overview</div>
+                    <div class="row g-2 text-start">
+                        <div class="col-6">
+                            <div class="bg-dark bg-opacity-25 p-3 rounded-3">
+                                <div class="text-mint fw-bold fs-3">{{ summary.total_farms }}</div>
+                                <div class="text-white-50 small">Active Farms</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-dark bg-opacity-25 p-3 rounded-3">
+                                <div class="text-mint fw-bold fs-3">{{ summary.total_records }}</div>
+                                <div class="text-white-50 small">Observations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Access Highlights: Soil Report & Weather Conditions immediate visibility -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <i class="bi bi-layers-half"></i>
+                </div>
+                <h4 class="h5 mb-2">1. Soil Report</h4>
+                <p class="text-muted small mb-3 flex-grow-1">
+                    Upload a field soil photo for visual texture and moisture analysis, or enter verified laboratory chemical test values (NPK, pH, EC).
+                </p>
+                <a href="{{ url_for('soil_report') }}" class="btn btn-sm btn-agri-outline w-100">
+                    Assess Soil <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="background-color: #fef3c7; color: #b45309;">
+                    <i class="bi bi-cloud-sun"></i>
+                </div>
+                <h4 class="h5 mb-2">2. Weather Conditions</h4>
+                <p class="text-muted small mb-3 flex-grow-1">
+                    Fetch live meteorological conditions and 7-day WMO forecasts with Open-Meteo, including recent 48h rainfall and humidity.
+                </p>
+                <a href="{{ url_for('weather') }}" class="btn btn-sm btn-agri-outline w-100">
+                    Check Weather <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="background-color: #dbeafe; color: #1d4ed8;">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                <h4 class="h5 mb-2">3. Crop Recommendation</h4>
+                <p class="text-muted small mb-3 flex-grow-1">
+                    Trained Random Forest Machine Learning classifier (97.5% accuracy) evaluates soil & climate to suggest top 3 defensible crops.
+                </p>
+                <a href="{{ url_for('crop_recommendation') }}" class="btn btn-sm btn-agri-outline w-100">
+                    Find Crops <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card">
+                <div class="feature-icon-wrapper" style="background-color: #f3e8ff; color: #7e22ce;">
+                    <i class="bi bi-camera"></i>
+                </div>
+                <h4 class="h5 mb-2">4. Growth Monitoring</h4>
+                <p class="text-muted small mb-3 flex-grow-1">
+                    Upload crop photos from seedling to harvest. Computer vision tracks foliage canopy coverage, yellowing chlorosis, and necrosis.
+                </p>
+                <a href="{{ url_for('farms_list') }}" class="btn btn-sm btn-agri-outline w-100">
+                    Open Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- How the System Works Flow -->
+    <div class="agri-card mb-5">
+        <div class="agri-card-header bg-light d-flex align-items-center justify-content-between">
+            <span class="brand-font fs-5 text-dark"><i class="bi bi-diagram-3-fill text-success me-2"></i>How the Smart Farming AI System Works</span>
+            <span class="badge badge-pill-soft badge-soft-success">End-to-End Workflow</span>
+        </div>
+        <div class="agri-card-body p-4">
+            <div class="row g-4 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                        <div class="text-primary fw-bold fs-4 mb-2">Step 1</div>
+                        <h6 class="fw-bold mb-1">Soil Analysis</h6>
+                        <p class="text-muted small mb-0">Photograph soil or enter lab report for chemical fertility rating.</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                        <div class="text-primary fw-bold fs-4 mb-2">Step 2</div>
+                        <h6 class="fw-bold mb-1">Weather Sync</h6>
+                        <p class="text-muted small mb-0">Detect farm coordinates to pull live temp, rainfall, and humidity.</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                        <div class="text-primary fw-bold fs-4 mb-2">Step 3</div>
+                        <h6 class="fw-bold mb-1">ML Selection</h6>
+                        <p class="text-muted small mb-0">Run Random Forest model; select crop and start monitoring record.</p>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 border rounded-3 bg-white h-100 shadow-sm">
+                        <div class="text-primary fw-bold fs-4 mb-2">Step 4</div>
+                        <h6 class="fw-bold mb-1">Monitor & Irrigate</h6>
+                        <p class="text-muted small mb-0">Upload photos as crop grows; receive FAO-56 irrigation advice.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Farms & Recent Monitoring Records Section -->
+    <div class="row g-4">
+        <!-- Saved Farms -->
+        <div class="col-lg-6">
+            <div class="agri-card h-100">
+                <div class="agri-card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-grid-fill text-success me-2"></i>Saved Farms ({{ summary.total_farms }})</span>
+                    <a href="{{ url_for('farms_list') }}" class="btn btn-sm btn-link text-decoration-none">View All</a>
+                </div>
+                <div class="agri-card-body p-0">
+                    {% if summary.recent_farms %}
+                        <div class="list-group list-group-flush">
+                            {% for farm in summary.recent_farms %}
+                                <a href="{{ url_for('farm_dashboard', farm_id=farm.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ farm.farm_name }}</div>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-geo-alt me-1"></i>{{ farm.location or 'Local Field' }} &bull; Planted: {{ farm.planting_date }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                            {{ farm.crop_selected }}
+                                        </span>
+                                        <div class="small text-muted mt-1">{{ farm.current_growth_stage }}</div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-2">No farm records created yet.</p>
+                            <a href="{{ url_for('crop_recommendation') }}" class="btn btn-sm btn-agri">Get Recommendation & Create Farm</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Observations & Health Alerts -->
+        <div class="col-lg-6">
+            <div class="agri-card h-100">
+                <div class="agri-card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-activity text-success me-2"></i>Recent Foliage Observations</span>
+                    <span class="badge badge-pill-soft badge-soft-info">{{ summary.total_records }} Total Logs</span>
+                </div>
+                <div class="agri-card-body p-0">
+                    {% if summary.recent_observations %}
+                        <div class="list-group list-group-flush">
+                            {% for obs in summary.recent_observations %}
+                                <div class="list-group-item p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div>
+                                            <span class="fw-bold text-dark">{{ obs.farm_name }}</span>
+                                            <span class="text-muted small">({{ obs.crop_selected }})</span>
+                                        </div>
+                                        <span class="badge {% if obs.health_status == 'Healthy' %}badge-soft-success{% elif obs.health_status == 'Mild Stress' %}badge-soft-warning{% else %}badge-soft-danger{% endif %} badge-pill-soft">
+                                            {{ obs.health_status }}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted mb-2">
+                                        <i class="bi bi-calendar3 me-1"></i>{{ obs.observation_date }} &bull; Stage: <b>{{ obs.growth_stage }}</b>
+                                    </div>
+                                    <div class="d-flex gap-3 small text-secondary">
+                                        <span>Canopy: <b>{{ obs.canopy_coverage }}%</b></span>
+                                        <span>Chlorosis: <b>{{ obs.chlorosis_yellowing }}%</b></span>
+                                        <span>Spotting: <b>{{ obs.necrosis_spots }}%</b></span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-camera fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-2">No growth monitoring photos uploaded yet.</p>
+                            <small class="text-muted">Upload photos after creating a farm record to start timeline tracking.</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

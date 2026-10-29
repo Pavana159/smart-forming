@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}My Farms & Monitoring Records – Smart Farming AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h1 class="h3 brand-font mb-1"><i class="bi bi-grid-fill text-success me-2"></i>My Farm Monitoring Records</h1>
+            <p class="text-muted small mb-0">Reopen, manage, and continue growth monitoring for your active agricultural plots.</p>
+        </div>
+        <a href="{{ url_for('soil_report') }}" class="btn btn-sm btn-agri mt-2 mt-md-0">
+            <i class="bi bi-plus-circle me-1"></i> Add New Farm Record
+        </a>
+    </div>
+
+    <!-- Farm Records Grid -->
+    {% if farms %}
+        <div class="row g-4">
+            {% for farm in farms %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="agri-card h-100 d-flex flex-column">
+                        <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark text-truncate" style="max-width: 180px;">{{ farm.farm_name }}</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                {{ farm.crop_selected }}
+                            </span>
+                        </div>
+                        <div class="agri-card-body flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                {% if farm.initial_crop_photo %}
+                                    <img src="{{ url_for('static', filename=farm.initial_crop_photo) }}" alt="Crop" class="rounded-3 border" style="width: 60px; height: 60px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-3 bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 60px; height: 60px;">
+                                        <i class="bi bi-tree fs-3"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="small text-muted"><i class="bi bi-geo-alt me-1"></i>{{ farm.location or 'Local Field' }}</div>
+                                    <div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>Planted: {{ farm.planting_date }}</div>
+                                </div>
+                            </div>
+
+                            <ul class="list-unstyled small text-muted mb-0 border-top pt-2">
+                                <li class="d-flex justify-content-between py-1">
+                                    <span>Current Growth Stage:</span>
+                                    <strong class="text-dark">{{ farm.current_growth_stage }}</strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-1">
+                                    <span>Soil Type:</span>
+                                    <span>{{ farm.soil_type or 'Loamy' }}</span>
+                                </li>
+                                <li class="d-flex justify-content-between py-1">
+                                    <span>Record Created:</span>
+                                    <span>{{ farm.created_at[:10] }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="p-3 bg-light border-top">
+                            <a href="{{ url_for('farm_dashboard', farm_id=farm.id) }}" class="btn btn-sm btn-agri w-100">
+                                Open Farm Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="agri-card p-5 text-center text-muted">
+            <i class="bi bi-journal-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+            <h4 class="h5 fw-bold text-dark">No Farm Records Found</h4>
+            <p class="small text-muted mb-4" style="max-width: 450px; margin: 0 auto;">
+                You haven't initialized any farm monitoring plots yet. Start by assessing your soil or running crop recommendations to choose a crop.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('soil_report') }}" class="btn btn-agri btn-sm">Start with Soil Report</a>
+                <a href="{{ url_for('crop_recommendation') }}" class="btn btn-agri-outline btn-sm">Direct Crop Recommendation</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

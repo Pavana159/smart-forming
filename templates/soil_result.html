@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Soil Assessment Result – Smart Farming AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <div class="badge badge-pill-soft badge-soft-success mb-2">Assessment Completed</div>
+            <h1 class="h3 brand-font mb-1"><i class="bi bi-clipboard2-check-fill text-success me-2"></i>Soil Evaluation Dossier</h1>
+            <p class="text-muted small mb-0">Record #{{ report.id }} &bull; Recorded on {{ report.created_at }}</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="{{ url_for('soil_report') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> New Assessment
+            </a>
+            <!-- Continue button to weather or recommendations with prefilled measurements -->
+            <a href="{{ url_for('weather') }}?report_id={{ report.id }}&soil_type={{ report.soil_texture }}" class="btn btn-sm btn-agri">
+                Proceed to Weather <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Prominent Honesty Banner -->
+    <div class="disclaimer-banner mb-4">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+            <div>
+                <strong>Data Distinction Notice:</strong>
+                <span class="small">
+                    Visible characteristics derived from optical photography are strictly separated from quantitative chemical measurements. Image analysis never invents N, P, K or pH numbers.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Summary & Chemical Measurements -->
+        <div class="col-lg-7">
+            <!-- Overall Summary -->
+            <div class="agri-card mb-4">
+                <div class="agri-card-header bg-light">
+                    <span class="fw-bold"><i class="bi bi-card-text text-primary me-2"></i>Soil Report Summary</span>
+                </div>
+                <div class="agri-card-body">
+                    <p class="mb-3 lead fs-6">
+                        {{ report.assessment_summary or "Soil record evaluated successfully." }}
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <b>Report Type:</b> {{ 'Optical Soil Photo' if report.report_type == 'image' else 'Laboratory Test Report' }}
+                        </span>
+                        <span class="badge bg-light text-dark border px-3 py-2">
+                            <b>Apparent / Recorded Texture:</b> {{ report.soil_texture or 'Loamy' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Known Quantitative Measurements -->
+            <div class="agri-card mb-4">
+                <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-beaker text-success me-2"></i>Measured Chemical Nutrients</span>
+                    <span class="badge badge-pill-soft {% if report.report_type == 'image' %}badge-soft-warning{% else %}badge-soft-success{% endif %}">
+                        {{ 'No Lab Measurements Linked' if report.report_type == 'image' else 'Verified Laboratory Entry' }}
+                    </span>
+                </div>
+                <div class="agri-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nutrient / Parameter</th>
+                                    <th>Value</th>
+                                    <th>Unit</th>
+                                    <th>Agronomic Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Nitrogen (N)</strong></td>
+                                    <td>
+                                        {% if report.nitrogen is not none %}
+                                            <span class="fw-bold text-success">{{ report.nitrogen }}</span>
+                                        {% else %}
+                                            <span class="text-danger small fst-italic">Not measured</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>kg/ha</td>
+                                    <td>
+                                        {% if report.nitrogen is not none %}
+                                            <span class="badge {% if report.nitrogen < 280 %}badge-soft-danger{% elif report.nitrogen > 560 %}badge-soft-info{% else %}badge-soft-success{% endif %} badge-pill-soft">
+                                                {{ 'Low (<280)' if report.nitrogen < 280 else ('High (>560)' if report.nitrogen > 560 else 'Adequate / Medium') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Requires Soil Test</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Phosphorus (P)</strong></td>
+                                    <td>
+                                        {% if report.phosphorus is not none %}
+                                            <span class="fw-bold text-success">{{ report.phosphorus }}</span>
+                                        {% else %}
+                                            <span class="text-danger small fst-italic">Not measured</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>kg/ha</td>
+                                    <td>
+                                        {% if report.phosphorus is not none %}
+                                            <span class="badge {% if report.phosphorus < 23 %}badge-soft-danger{% elif report.phosphorus > 56 %}badge-soft-info{% else %}badge-soft-success{% endif %} badge-pill-soft">
+                                                {{ 'Low (<23)' if report.phosphorus < 23 else ('High (>56)' if report.phosphorus > 56 else 'Adequate / Medium') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Requires Soil Test</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Potassium (K)</strong></td>
+                                    <td>
+                                        {% if report.potassium is not none %}
+                                            <span class="fw-bold text-success">{{ report.potassium }}</span>
+                                        {% else %}
+                                            <span class="text-danger small fst-italic">Not measured</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>kg/ha</td>
+                                    <td>
+                                        {% if report.potassium is not none %}
+                                            <span class="badge {% if report.potassium < 140 %}badge-soft-danger{% elif report.potassium > 280 %}badge-soft-info{% else %}badge-soft-success{% endif %} badge-pill-soft">
+                                                {{ 'Low (<140)' if report.potassium < 140 else ('High (>280)' if report.potassium > 280 else 'Adequate / Medium') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Requires Soil Test</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Soil pH (Reaction)</strong></td>
+                                    <td>
+                                        {% if report.ph is not none %}
+                                            <span class="fw-bold text-success">{{ report.ph }}</span>
+                                        {% else %}
+                                            <span class="text-danger small fst-italic">Not measured</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>scale</td>
+                                    <td>
+                                        {% if report.ph is not none %}
+                                            <span class="badge {% if report.ph < 6.0 %}badge-soft-danger{% elif report.ph > 7.5 %}badge-soft-warning{% else %}badge-soft-success{% endif %} badge-pill-soft">
+                                                {{ 'Acidic' if report.ph < 6.0 else ('Alkaline' if report.ph > 7.5 else 'Near Neutral (Ideal)') }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Requires pH Electrode</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Missing Information Table -->
+            {% if report.missing_measurements %}
+            <div class="agri-card mb-4">
+                <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-danger"><i class="bi bi-exclamation-octagon-fill me-2"></i>Missing Chemical Information</span>
+                    <span class="badge badge-pill-soft badge-soft-danger">{{ report.missing_measurements|length }} Items</span>
+                </div>
+                <div class="agri-card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for missing in report.missing_measurements %}
+                            <li class="list-group-item d-flex justify-content-between align-items-start p-3">
+                                <div>
+                                    <strong class="text-dark">{{ missing.field }}</strong>
+                                    <div class="small text-muted">{{ missing.reason }}</div>
+                                </div>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                    {{ missing.status }}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right: Optical Photo Observations & Suggestions -->
+        <div class="col-lg-5">
+            <!-- Image Observations (If Photo Uploaded) -->
+            {% if report.file_path %}
+            <div class="agri-card mb-4">
+                <div class="agri-card-header bg-light">
+                    <span class="fw-bold"><i class="bi bi-image text-primary me-2"></i>Uploaded Image & Visual Traits</span>
+                </div>
+                <div class="agri-card-body">
+                    <div class="text-center mb-3">
+                        <img src="{{ url_for('static', filename=report.file_path) }}" alt="Soil Sample" class="img-fluid rounded-3 border shadow-sm" style="max-height: 220px; object-fit: cover;">
+                    </div>
+
+                    {% if report.visible_observations %}
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Color Assessment:</span>
+                            <span class="fw-semibold">{{ report.visible_observations.color_description }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Surface Moisture:</span>
+                            <span class="fw-semibold">{{ report.visible_observations.moisture_appearance }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Texture Roughness:</span>
+                            <span class="fw-semibold">{{ report.visible_observations.surface_texture }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Drainage Index:</span>
+                            <span class="fw-semibold">{{ report.visible_observations.drainage_indicator }}</span>
+                        </li>
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Suggestions for Next Steps -->
+            <div class="agri-card">
+                <div class="agri-card-header bg-success text-white">
+                    <span class="fw-bold"><i class="bi bi-lightbulb-fill me-2"></i>Suggestions for Next Steps</span>
+                </div>
+                <div class="agri-card-body">
+                    <ol class="small text-muted ps-3 mb-4">
+                        <li class="mb-2">
+                            <b>Obtain Farm Weather:</b> Next, fetch live meteorological data (temperature, humidity, and forecast rain) for your farm.
+                        </li>
+                        <li class="mb-2">
+                            <b>Fill Missing Soil Values:</b> If exact NPK values were not provided, test a field sample with an agricultural soil kit or state laboratory.
+                        </li>
+                        <li class="mb-2">
+                            <b>Run Crop Recommendation:</b> Combine your soil and weather data to generate AI crop recommendations.
+                        </li>
+                    </ol>
+
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('weather') }}?report_id={{ report.id }}&soil_type={{ report.soil_texture }}" class="btn btn-agri">
+                            <i class="bi bi-cloud-sun me-1"></i> Proceed to Weather Conditions
+                        </a>
+                        <a href="{{ url_for('crop_recommendation') }}?report_id={{ report.id }}&n={{ report.nitrogen or '' }}&p={{ report.phosphorus or '' }}&k={{ report.potassium or '' }}&ph={{ report.ph or '' }}&soil_type={{ report.soil_texture }}" class="btn btn-agri-outline">
+                            <i class="bi bi-cpu me-1"></i> Skip to Crop Recommendation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

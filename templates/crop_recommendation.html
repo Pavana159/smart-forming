@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Crop Recommendation – Smart Farming AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h1 class="h3 brand-font mb-1"><i class="bi bi-cpu-fill text-primary me-2"></i>AI Crop Recommendation Engine</h1>
+            <p class="text-muted small mb-0">Trained Random Forest Classifier (97.5% Accuracy) on 2,200 Benchmark ICAR Agronomic Records.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="{{ url_for('soil_report') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-layers-half me-1"></i> Pull Soil Report
+            </a>
+            <a href="{{ url_for('weather') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-cloud-sun me-1"></i> Pull Weather
+            </a>
+        </div>
+    </div>
+
+    <!-- Integrity Alert -->
+    <div class="disclaimer-banner mb-4">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-shield-check text-success fs-5"></i>
+            <div>
+                <strong>Scientific Decision-Support Principle:</strong>
+                <span class="small">
+                    Classification scores reflect statistical alignment with historical ICAR/FAO experimental agronomic ranges. They are decision-support estimates, not a guarantee of crop success. Local soil drainage, pest prevalence, and market economics must always be considered.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Form Column -->
+        <div class="col-lg-5">
+            <div class="agri-card">
+                <div class="agri-card-header bg-light">
+                    <span class="fw-bold"><i class="bi bi-sliders text-primary me-2"></i>Farm Parameters & Measurements</span>
+                </div>
+                <div class="agri-card-body">
+                    <form id="cropRecForm">
+                        <input type="hidden" name="soil_report_ref" value="{{ prefill.soil_report_ref }}">
+                        
+                        <!-- Soil Nutrients -->
+                        <div class="mb-3">
+                            <span class="small text-uppercase fw-bold text-success d-block mb-2">Soil Fertility (NPK & pH)</span>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Nitrogen (N) <span class="text-muted">kg/ha</span></label>
+                                    <input type="number" step="0.1" name="nitrogen" id="recN" class="form-control form-control-sm" value="{{ prefill.n }}" placeholder="e.g. 90" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Phosphorus (P) <span class="text-muted">kg/ha</span></label>
+                                    <input type="number" step="0.1" name="phosphorus" id="recP" class="form-control form-control-sm" value="{{ prefill.p }}" placeholder="e.g. 42" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Potassium (K) <span class="text-muted">kg/ha</span></label>
+                                    <input type="number" step="0.1" name="potassium" id="recK" class="form-control form-control-sm" value="{{ prefill.k }}" placeholder="e.g. 43" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Soil Reaction (pH)</label>
+                                    <input type="number" step="0.1" name="ph" id="recPH" class="form-control form-control-sm" value="{{ prefill.ph }}" placeholder="e.g. 6.5" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Climate & Weather -->
+                        <div class="mb-3">
+                            <span class="small text-uppercase fw-bold text-primary d-block mb-2">Meteorological Profile</span>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Temperature <span class="text-muted">°C</span></label>
+                                    <input type="number" step="0.1" name="temperature" id="recTemp" class="form-control form-control-sm" value="{{ prefill.temp }}" placeholder="e.g. 25.0" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Humidity <span class="text-muted">%</span></label>
+                                    <input type="number" step="0.1" name="humidity" id="recHum" class="form-control form-control-sm" value="{{ prefill.humidity }}" placeholder="e.g. 80.0" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Expected Rainfall <span class="text-muted">mm / month</span></label>
+                                    <input type="number" step="0.1" name="rainfall" id="recRain" class="form-control form-control-sm" value="{{ prefill.rainfall }}" placeholder="e.g. 200.0" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Farm Details -->
+                        <div class="mb-4">
+                            <span class="small text-uppercase fw-bold text-secondary d-block mb-2">Location & Soil Characteristics</span>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Soil Type</label>
+                                    <select name="soil_type" id="recSoilType" class="form-select form-select-sm">
+                                        <option value="Loamy" {% if prefill.soil_type == 'Loamy' %}selected{% endif %}>Loamy (Balanced)</option>
+                                        <option value="Sandy" {% if prefill.soil_type == 'Sandy' %}selected{% endif %}>Sandy (Fast Draining)</option>
+                                        <option value="Sandy Loam" {% if prefill.soil_type == 'Sandy Loam' %}selected{% endif %}>Sandy Loam</option>
+                                        <option value="Clay Loam" {% if prefill.soil_type == 'Clay Loam' %}selected{% endif %}>Clay Loam</option>
+                                        <option value="Clay" {% if prefill.soil_type == 'Clay' %}selected{% endif %}>Clay (Moisture Retentive)</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Location / Region</label>
+                                    <input type="text" name="location" id="recLoc" class="form-control form-control-sm" value="{{ prefill.location }}" placeholder="e.g. Punjab Plains">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="recAlert" class="alert alert-danger small d-none mb-3"></div>
+
+                        <button type="submit" class="btn btn-agri w-100" id="recSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                            <i class="bi bi-cpu me-1"></i> Run AI Recommendation Model
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation Results Column -->
+        <div class="col-lg-7">
+            <!-- Initial Placeholder -->
+            <div id="recPlaceholder" class="agri-card h-100 p-5 text-center text-muted">
+                <i class="bi bi-cpu fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                <h4 class="h5 fw-bold text-dark">Ready to Analyze Farm Suitability</h4>
+                <p class="small text-muted mb-0" style="max-width: 400px; margin: 0 auto;">
+                    Fill or verify the soil and climate parameters on the left, then click <b>Run AI Recommendation Model</b> to see the top defensible crop candidates.
+                </p>
+            </div>
+
+            <!-- Active Results Container -->
+            <div id="recResultsContainer" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold brand-font"><i class="bi bi-stars text-warning me-2"></i>Suitable Crop Candidates</h5>
+                    <span class="badge badge-pill-soft badge-soft-success" id="recCountBadge">Top Matches</span>
+                </div>
+
+                <div id="candidatesList" class="d-flex flex-column gap-3 mb-4">
+                    <!-- Populated via JavaScript -->
+                </div>
+
+                <!-- Continue Button -->
+                <div class="agri-card p-3 bg-light border-success">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                        <div>
+                            <span class="fw-bold text-dark d-block">Select a crop above to begin monitoring</span>
+                            <small class="text-muted">A dedicated farm record will be created to track growth through photos and irrigation advice.</small>
+                        </div>
+                        <button type="button" class="btn btn-agri px-4 text-nowrap" id="btnContinueCreate">
+                            Continue & Create Farm Record <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let selectedCandidateCrop = null;
+
+document.getElementById('cropRecForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('recSubmitBtn');
+    const spinner = btn.querySelector('.spinner-border');
+    const alertBox = document.getElementById('recAlert');
+    const placeholder = document.getElementById('recPlaceholder');
+    const resultsContainer = document.getElementById('recResultsContainer');
+    const candidatesList = document.getElementById('candidatesList');
+
+    alertBox.classList.add('d-none');
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    const form = document.getElementById('cropRecForm');
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/api/recommend', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success && data.candidates && data.candidates.length > 0) {
+            placeholder.classList.add('d-none');
+            resultsContainer.classList.remove('d-none');
+            candidatesList.innerHTML = '';
+
+            // Render up to 3 defensible candidates
+            data.candidates.forEach((crop, index) => {
+                const isFirst = index === 0;
+                if (isFirst) selectedCandidateCrop = crop.crop_name;
+
+                const card = document.createElement('div');
+                card.className = `agri-card p-3 border-2 ${isFirst ? 'border-success bg-white shadow-sm' : 'border-light'}`;
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.crop-select-radio').forEach(r => r.checked = false);
+                    card.querySelector('.crop-select-radio').checked = true;
+                    document.querySelectorAll('.agri-card').forEach(c => c.classList.remove('border-success', 'shadow-sm'));
+                    card.classList.add('border-success', 'shadow-sm');
+                    selectedCandidateCrop = crop.crop_name;
+                });
+
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="radio" name="crop_selection" class="form-check-input crop-select-radio" value="${crop.crop_name}" ${isFirst ? 'checked' : ''}>
+                            <div>
+                                <h5 class="h6 fw-bold mb-0 text-dark">${crop.crop_name}</h5>
+                                <span class="badge badge-pill-soft badge-soft-info" style="font-size: 0.72rem;">${crop.category}</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge ${isFirst ? 'bg-success' : 'bg-secondary'} px-2 py-1">
+                                Match: ${crop.confidence_score}%
+                            </span>
+                        </div>
+                    </div>
+
+                    <p class="small text-dark mb-2">
+                        <b>Why suitable:</b> ${crop.why_suitable}
+                    </p>
+
+                    <!-- Supporting Conditions -->
+                    <div class="mb-2">
+                        <span class="small fw-semibold text-success d-block"><i class="bi bi-check-circle-fill me-1"></i>Supporting Farm Conditions:</span>
+                        <ul class="small text-muted ps-3 mb-1">
+                            ${crop.supporting_conditions.map(r => `<li>${r}</li>`).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- Important Limitations -->
+                    <div class="mb-2">
+                        <span class="small fw-semibold text-danger d-block"><i class="bi bi-exclamation-circle-fill me-1"></i>Important Limitations:</span>
+                        <div class="small text-muted ps-1">${crop.limitations}</div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 pt-1 border-top mt-2 small text-muted">
+                        <span><b>Seasons:</b> ${crop.seasons.join(', ')}</span>
+                        &bull;
+                        <span><b>Recommended Soils:</b> ${crop.suitable_soils.join(', ')}</span>
+                    </div>
+                `;
+                candidatesList.appendChild(card);
+            });
+
+            // Smooth scroll to results
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+
+        } else {
+            alertBox.textContent = data.error || 'No recommendations generated.';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (err) {
+        alertBox.textContent = 'Network error communicating with ML prediction service.';
+        alertBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+
+// Continue Button Click Handler
+document.getElementById('btnContinueCreate').addEventListener('click', () => {
+    if (!selectedCandidateCrop) {
+        alert("Please select a crop candidate first.");
+        return;
+    }
+    const loc = document.getElementById('recLoc').value;
+    const soilType = document.getElementById('recSoilType').value;
+    const reportRef = document.querySelector('input[name="soil_report_ref"]').value;
+    const weatherSummary = `Temp: ${document.getElementById('recTemp').value}°C, Humidity: ${document.getElementById('recHum').value}%, Rain: ${document.getElementById('recRain').value}mm`;
+
+    window.location.href = `/farm/new?crop=${encodeURIComponent(selectedCandidateCrop)}&location=${encodeURIComponent(loc)}&soil_type=${encodeURIComponent(soilType)}&soil_report_ref=${encodeURIComponent(reportRef)}&weather_summary=${encodeURIComponent(weatherSummary)}`;
+});
+</script>
+{% endblock %}

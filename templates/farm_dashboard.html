@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ farm.farm_name }} ({{ farm.crop_selected }}) – Farm Monitoring Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Dashboard Top Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-success px-3 py-1">{{ farm.crop_selected }}</span>
+                <span class="badge bg-light text-dark border">{{ farm.current_growth_stage }}</span>
+            </div>
+            <h1 class="h3 brand-font mb-0 text-dark">{{ farm.farm_name }}</h1>
+            <p class="text-muted small mb-0">
+                <i class="bi bi-geo-alt me-1"></i>{{ farm.location or 'Local Field' }} &bull; Planted on <b>{{ farm.planting_date }}</b> &bull; Soil: <b>{{ farm.soil_type }}</b>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0">
+            <!-- Modal trigger for Upload New Crop Photo -->
+            <button type="button" class="btn btn-agri shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                <i class="bi bi-camera-fill me-1"></i> Upload New Crop Photo
+            </button>
+            <a href="{{ url_for('farm_pdf_report', farm_id=farm.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i> Download PDF Report
+            </a>
+            <a href="{{ url_for('farm_irrigation_page', farm_id=farm.id) }}" class="btn btn-outline-primary">
+                <i class="bi bi-droplet-half me-1"></i> Irrigation Center
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Farm Alerts & In-Website Notifications -->
+    {% if notifications %}
+    <div class="mb-4">
+        {% for notif in notifications %}
+            <div class="alert alert-{{ notif.severity }} alert-dismissible fade show p-3 shadow-sm d-flex align-items-center justify-content-between mb-2" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi {% if notif.severity == 'warning' %}bi-exclamation-triangle-fill{% elif notif.severity == 'danger' %}bi-slash-circle-fill{% else %}bi-bell-fill{% endif %} fs-5"></i>
+                    <div>
+                        <strong class="d-block">{{ notif.title }}</strong>
+                        <span class="small">{{ notif.message }}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <!-- 1. Latest Health & Visual Foliage Status Card -->
+        <div class="col-lg-7">
+            <div class="agri-card h-100">
+                <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-activity text-success me-2"></i>Current Crop Foliage Health</span>
+                    {% if latest_record %}
+                        <span class="badge {% if latest_record.health_status == 'Healthy' %}badge-soft-success{% elif latest_record.health_status == 'Mild Stress' %}badge-soft-warning{% else %}badge-soft-danger{% endif %} badge-pill-soft">
+                            {{ latest_record.health_status }} ({{ latest_record.growth_stage }})
+                        </span>
+                    {% else %}
+                        <span class="badge badge-pill-soft badge-soft-info">Awaiting First Upload</span>
+                    {% endif %}
+                </div>
+                <div class="agri-card-body">
+                    {% if latest_record %}
+                        <div class="row g-3 align-items-center mb-3">
+                            <div class="col-sm-5 text-center">
+                                <img src="{{ url_for('static', filename=latest_record.photo_path) }}" alt="Latest Crop Photo" class="img-fluid rounded-3 border shadow-sm" style="max-height: 180px; width: 100%; object-fit: cover;">
+                                <div class="text-muted small mt-1"><i class="bi bi-calendar3 me-1"></i>{{ latest_record.observation_date }}</div>
+                            </div>
+                            <div class="col-sm-7">
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>Canopy Coverage:</span>
+                                        <strong>{{ latest_record.canopy_coverage }}%</strong>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ latest_record.canopy_coverage }}%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>Chlorosis (Yellowing):</span>
+                                        <strong class="{% if latest_record.chlorosis_yellowing > 15 %}text-warning{% endif %}">{{ latest_record.chlorosis_yellowing }}%</strong>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ latest_record.chlorosis_yellowing }}%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>Brown Spots / Necrosis:</span>
+                                        <strong class="{% if latest_record.necrosis_spots > 5 %}text-danger{% endif %}">{{ latest_record.necrosis_spots }}%</strong>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ latest_record.necrosis_spots }}%"></div>
+                                    </div>
+                                </div>
+                                <div class="small text-muted">
+                                    <b>Foliage Greenness Index (ExG):</b> {{ latest_record.greenness_index }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comparison Diff Notes -->
+                        {% if latest_record.comparison_notes %}
+                        <div class="p-2 px-3 bg-light rounded-3 border mb-2 small text-muted">
+                            <strong class="text-dark"><i class="bi bi-clock-history me-1"></i>Temporal Progression:</strong>
+                            {{ latest_record.comparison_notes }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Scientific Disclaimers -->
+                        <div class="disclaimer-banner py-2 px-3 small" style="font-size: 0.78rem;">
+                            <b>Limitation:</b> Image analysis detects chromatic color shifts (yellowing, brown lesions). It does not replace certified laboratory pathology for bacterial/viral strains.
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-camera fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <h6 class="fw-bold text-dark">No Crop Observations Logged Yet</h6>
+                            <p class="small text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
+                                Upload a crop photo for stage '{{ farm.current_growth_stage }}' to begin tracking foliage health and canopy progression.
+                            </p>
+                            <button type="button" class="btn btn-sm btn-agri" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                                <i class="bi bi-camera-fill me-1"></i> Upload First Photo
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Smart Irrigation Advice Summary Card -->
+        <div class="col-lg-5">
+            <div class="agri-card h-100">
+                <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-droplet-half text-primary me-2"></i>Smart Irrigation Advice</span>
+                    <a href="{{ url_for('farm_irrigation_page', farm_id=farm.id) }}" class="btn btn-sm btn-link text-decoration-none">Full Advisory</a>
+                </div>
+                <div class="agri-card-body d-flex flex-column justify-content-between">
+                    {% if latest_irrigation %}
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge {% if 'may be needed' in latest_irrigation.status %}badge-soft-danger{% elif 'not be needed' in latest_irrigation.status %}badge-soft-success{% else %}badge-soft-warning{% endif %} badge-pill-soft fs-6">
+                                    {{ latest_irrigation.status }}
+                                </span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2">Actionable Guidance:</h6>
+                            <p class="small text-dark mb-3">
+                                {{ latest_irrigation.recommended_action }}
+                            </p>
+
+                            <div class="p-2 bg-light rounded-3 border mb-3 small text-muted">
+                                <div class="d-flex justify-content-between py-1">
+                                    <span>Forecast Rain (Next 3 Days):</span>
+                                    <strong class="text-dark">{{ latest_irrigation.forecast_rain_mm }} mm</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-1">
+                                    <span>Recent Rain (Past 48h):</span>
+                                    <strong class="text-dark">{{ latest_irrigation.recent_rain_mm }} mm</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-1">
+                                    <span>Crop Coefficient (Kc):</span>
+                                    <strong class="text-dark">{{ latest_irrigation.crop_coefficient_kc }} ({{ latest_irrigation.crop_stage }})</strong>
+                                </div>
+                                <div class="d-flex justify-content-between py-1">
+                                    <span>Soil Moisture Sensor:</span>
+                                    <strong>{{ 'Connected (' ~ latest_irrigation.soil_moisture_measured ~ '%)' if latest_irrigation.is_sensor_available else 'Manual Estimate' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-top pt-2 d-flex justify-content-between align-items-center small text-muted">
+                            <span><i class="bi bi-clock me-1"></i>Next Check: <b>{{ latest_irrigation.next_check_time or '24 Hours' }}</b></span>
+                            <a href="{{ url_for('farm_irrigation_page', farm_id=farm.id) }}" class="btn btn-sm btn-agri-outline">Reassess</a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted flex-grow-1 d-flex flex-column justify-content-center">
+                            <i class="bi bi-droplet fs-1 d-block mb-2 text-primary opacity-50"></i>
+                            <h6 class="fw-bold text-dark">Irrigation Not Assessed Yet</h6>
+                            <p class="small text-muted mb-3">
+                                Connect live weather and soil conditions to generate water requirement advice.
+                            </p>
+                            <div>
+                                <a href="{{ url_for('farm_irrigation_page', farm_id=farm.id) }}" class="btn btn-sm btn-agri">
+                                    Assess Water Needs
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Foliage Metric Progression Over Time -->
+    {% if history and history|length > 1 %}
+    <div class="agri-card mb-4">
+        <div class="agri-card-header bg-light">
+            <span class="fw-bold"><i class="bi bi-graph-up-arrow text-success me-2"></i>Crop Canopy & Foliage Metric Progression</span>
+        </div>
+        <div class="agri-card-body" style="height: 280px;">
+            <canvas id="cropHealthChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Crop Timeline Section -->
+    <div class="agri-card mb-4">
+        <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Crop Growth Timeline ({{ history|length }} Observations)</span>
+            <button type="button" class="btn btn-sm btn-agri" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                <i class="bi bi-plus-circle me-1"></i> Add Observation
+            </button>
+        </div>
+        <div class="agri-card-body">
+            {% if history %}
+                <div class="timeline">
+                    {% for rec in history|reverse %}
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h5 class="h6 fw-bold mb-0 text-dark">{{ rec.growth_stage }}</h5>
+                                        <span class="badge {% if rec.health_status == 'Healthy' %}badge-soft-success{% elif rec.health_status == 'Mild Stress' %}badge-soft-warning{% else %}badge-soft-danger{% endif %} badge-pill-soft">
+                                            {{ rec.health_status }}
+                                        </span>
+                                    </div>
+                                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ rec.observation_date }}</small>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-sm-4 col-md-3">
+                                        <img src="{{ url_for('static', filename=rec.photo_path) }}" alt="Observation Photo" class="img-fluid rounded-3 border" style="max-height: 140px; width: 100%; object-fit: cover;">
+                                    </div>
+                                    <div class="col-sm-8 col-md-9">
+                                        <div class="d-flex flex-wrap gap-3 small text-muted mb-2">
+                                            <span>Canopy Coverage: <strong class="text-dark">{{ rec.canopy_coverage }}%</strong></span>
+                                            <span>Chlorosis (Yellowing): <strong class="text-dark">{{ rec.chlorosis_yellowing }}%</strong></span>
+                                            <span>Necrotic Spots: <strong class="text-dark">{{ rec.necrosis_spots }}%</strong></span>
+                                        </div>
+
+                                        {% if rec.visible_symptoms %}
+                                            <div class="mb-2">
+                                                <span class="small fw-bold text-dark">Visible Symptoms:</span>
+                                                <span class="small text-muted">{{ rec.visible_symptoms|join(', ') }}</span>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if rec.comparison_notes %}
+                                            <div class="p-2 bg-light rounded-2 border small text-muted mb-2">
+                                                <b>Progress Comparison:</b> {{ rec.comparison_notes }}
+                                            </div>
+                                        {% endif %}
+
+                                        {% if rec.farmer_notes %}
+                                            <div class="small text-secondary">
+                                                <i class="bi bi-chat-left-text me-1"></i><b>Farmer Notes:</b> {{ rec.farmer_notes }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <p class="mb-0">No photos in the timeline yet. Click 'Upload New Crop Photo' above to log your first growth stage.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Upload New Crop Photo -->
+<div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-labelledby="uploadPhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="uploadPhotoModalLabel">
+                    <i class="bi bi-camera-fill text-success me-2"></i>Upload New Crop Photo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="uploadCropPhotoForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <!-- Confirm Selected Farm & Crop -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between small">
+                            <span>Farm Plot:</span>
+                            <strong class="text-dark">{{ farm.farm_name }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Selected Crop:</span>
+                            <strong class="text-success">{{ farm.crop_selected }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Growth Stage Selector -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Growth Stage <span class="text-danger">*</span></label>
+                        <select name="growth_stage" class="form-select form-select-sm" required>
+                            {% for stage in stages %}
+                                <option value="{{ stage }}" {% if stage == farm.current_growth_stage %}selected{% endif %}>{{ stage }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Observation Date -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Observation Date</label>
+                        <input type="date" name="observation_date" class="form-control form-control-sm" id="modalObsDate">
+                    </div>
+
+                    <!-- Photo Upload Dropzone -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Foliage Photograph <span class="text-danger">*</span></label>
+                        <div class="dropzone-box" id="modalDropzone">
+                            <input type="file" name="crop_photo" id="modalPhotoInput" class="d-none" accept=".jpg,.jpeg,.png,.webp" required>
+                            <div class="dropzone-placeholder">
+                                <i class="bi bi-cloud-arrow-up-fill fs-2 text-mint d-block mb-1"></i>
+                                <span class="small fw-semibold d-block">Click or Drop Photo Here</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">Supports JPEG, PNG, WebP (Max 16 MB)</span>
+                            </div>
+                            <div class="image-preview-container d-none">
+                                <img src="" alt="Preview" class="preview-image">
+                                <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 btn-retake">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optional Farmer Notes -->
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Farmer Field Notes (Optional)</label>
+                        <textarea name="farmer_notes" class="form-control form-control-sm" rows="2" placeholder="e.g. Applied bio-fertilizer yesterday; foliage looks vibrant..."></textarea>
+                    </div>
+
+                    <div id="modalUploadAlert" class="alert alert-danger small d-none mt-2"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-agri btn-sm" id="btnSubmitCropPhoto">
+                        <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                        <i class="bi bi-cloud-upload me-1"></i> Analyze & Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto set today's date in modal
+document.addEventListener('DOMContentLoaded', () => {
+    const dInput = document.getElementById('modalObsDate');
+    if (dInput) dInput.value = new Date().toISOString().split('T')[0];
+
+    // Initialize Chart.js if history exists
+    {% if history and history|length > 1 %}
+        const histData = {{ history|tojson }};
+        renderCropHealthChart('cropHealthChart', histData);
+    {% endif %}
+});
+
+// Modal Upload Submission
+document.getElementById('uploadCropPhotoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitCropPhoto');
+    const spinner = btn.querySelector('.spinner-border');
+    const alertBox = document.getElementById('modalUploadAlert');
+    const fileInput = document.getElementById('modalPhotoInput');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alertBox.textContent = 'Please choose a crop photograph to upload.';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    alertBox.classList.add('d-none');
+
+    const form = document.getElementById('uploadCropPhotoForm');
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/api/farm/{{ farm.id }}/monitoring/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            // Reload page to display new observation in timeline and charts
+            window.location.reload();
+        } else {
+            alertBox.textContent = data.error || 'Failed to process crop photo.';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (err) {
+        alertBox.textContent = 'Network or server communication error.';
+        alertBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

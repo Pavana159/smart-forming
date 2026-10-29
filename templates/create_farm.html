@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Farm Monitoring Record – Smart Farming AI{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 780px;">
+    <!-- Step Wizard Tracker -->
+    <div class="step-counter mb-4">
+        <div class="step-item completed">
+            <div class="step-circle"><i class="bi bi-check"></i></div>
+            <div class="step-label">1. Soil & Weather</div>
+        </div>
+        <div class="step-item completed">
+            <div class="step-circle"><i class="bi bi-check"></i></div>
+            <div class="step-label">2. Crop Recommendation</div>
+        </div>
+        <div class="step-item active">
+            <div class="step-circle">3</div>
+            <div class="step-label">3. Confirm Farm Record</div>
+        </div>
+        <div class="step-item">
+            <div class="step-circle">4</div>
+            <div class="step-label">4. Growth Monitoring</div>
+        </div>
+    </div>
+
+    <div class="agri-card shadow-sm">
+        <div class="agri-card-header bg-success text-white py-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="h4 mb-0 fw-bold"><i class="bi bi-journal-plus me-2"></i>Create Farm Monitoring Record</h1>
+                    <small class="text-white-50">Initialize persistent tracking for your selected crop</small>
+                </div>
+                <span class="badge bg-white text-success px-3 py-2 fw-bold fs-6">
+                    {{ init_data.crop_selected }}
+                </span>
+            </div>
+        </div>
+        <div class="agri-card-body p-4">
+            <form action="{{ url_for('farm_create') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="crop_selected" value="{{ init_data.crop_selected }}">
+                <input type="hidden" name="soil_report_ref" value="{{ init_data.soil_report_ref }}">
+                <input type="hidden" name="weather_summary" value="{{ init_data.weather_summary }}">
+
+                <!-- Farm Identity -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Farm / Field Name or Nickname <span class="text-danger">*</span></label>
+                    <input type="text" name="farm_name" class="form-control" value="North Field – {{ init_data.crop_selected }}" required>
+                    <div class="form-text">Choose a descriptive name to easily identify this plot later.</div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Location / Field Coordinates</label>
+                        <input type="text" name="location" class="form-control" value="{{ init_data.location or 'Main Agricultural Plot' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Planting Date</label>
+                        <input type="date" name="planting_date" class="form-control" id="plantingDateInput">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Soil Classification</label>
+                        <select name="soil_type" class="form-select">
+                            <option value="Loamy" {% if init_data.soil_type == 'Loamy' %}selected{% endif %}>Loamy (Balanced)</option>
+                            <option value="Sandy" {% if init_data.soil_type == 'Sandy' %}selected{% endif %}>Sandy</option>
+                            <option value="Sandy Loam" {% if init_data.soil_type == 'Sandy Loam' %}selected{% endif %}>Sandy Loam</option>
+                            <option value="Clay Loam" {% if init_data.soil_type == 'Clay Loam' %}selected{% endif %}>Clay Loam</option>
+                            <option value="Clay" {% if init_data.soil_type == 'Clay' %}selected{% endif %}>Clay</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Current Growth Stage</label>
+                        <select name="current_growth_stage" class="form-select">
+                            <option value="Immediately after planting" selected>Immediately after planting</option>
+                            <option value="Seedling growth">Seedling growth</option>
+                            <option value="Vegetative growth">Vegetative growth</option>
+                            <option value="Flowering">Flowering</option>
+                            <option value="Fruiting or grain formation">Fruiting or grain formation</option>
+                            <option value="Near harvest">Near harvest</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Initial Crop Photo (Optional) -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold">Initial Crop Photo (Optional Baseline)</label>
+                    <div class="dropzone-box" id="initialPhotoDropzone">
+                        <input type="file" name="initial_photo" id="initialPhotoInput" class="d-none" accept=".jpg,.jpeg,.png,.webp">
+                        <div class="dropzone-placeholder">
+                            <i class="bi bi-camera-fill fs-2 text-mint d-block mb-1"></i>
+                            <span class="small fw-semibold d-block">Click to upload baseline seedling or field photo</span>
+                            <span class="text-muted" style="font-size: 0.75rem;">JPEG, PNG, WebP</span>
+                        </div>
+                        <div class="image-preview-container d-none">
+                            <img src="" alt="Preview" class="preview-image">
+                            <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 btn-retake">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Environmental Snapshot Info Box -->
+                {% if init_data.weather_summary or init_data.soil_report_ref %}
+                <div class="p-3 bg-light rounded-3 border mb-4 small text-muted">
+                    <div class="fw-bold text-dark mb-1"><i class="bi bi-link-45deg me-1"></i>Linked Baseline Data:</div>
+                    {% if init_data.soil_report_ref %}
+                        <div>&bull; Linked to Soil Report <b>#{{ init_data.soil_report_ref }}</b></div>
+                    {% endif %}
+                    {% if init_data.weather_summary %}
+                        <div>&bull; Meteorological Snapshot: <b>{{ init_data.weather_summary }}</b></div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Actions -->
+                <div class="d-flex justify-content-between align-items-center pt-2">
+                    <a href="{{ url_for('crop_recommendation') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Change Crop
+                    </a>
+                    <button type="submit" class="btn btn-agri px-4">
+                        <i class="bi bi-check2-circle me-1"></i> Confirm & Open Farm Dashboard
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto set today's date if empty
+document.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('plantingDateInput');
+    if (!dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

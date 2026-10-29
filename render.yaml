@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: smart-farming-ai
+    env: python
+    buildCommand: pip install -r requirements.txt && python ml/train_model.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    plan: free
+    disk:
+      name: smart-farming-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/smart_farming.db
+      - key: UPLOAD_FOLDER
+        value: /var/data/uploads
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.9

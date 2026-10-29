@@ -1,0 +1,33 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database files
+*.db
+*.sqlite3
+
+# Uploaded media (keep sample folders)
+static/uploads/crops/*
+static/uploads/soil/*
+static/uploads/reports/*
+!static/uploads/crops/.gitkeep
+!static/uploads/soil/.gitkeep
+!static/uploads/reports/.gitkeep
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

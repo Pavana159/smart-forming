@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Irrigation Advisory – {{ farm.farm_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-success px-3 py-1">{{ farm.crop_selected }}</span>
+                <span class="badge bg-light text-dark border">{{ farm.current_growth_stage }}</span>
+            </div>
+            <h1 class="h3 brand-font mb-0 text-dark"><i class="bi bi-droplet-half text-primary me-2"></i>Irrigation Assessment Center</h1>
+            <p class="text-muted small mb-0">{{ farm.farm_name }} &bull; Soil: <b>{{ farm.soil_type }}</b> &bull; {{ farm.location }}</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="{{ url_for('farm_dashboard', farm_id=farm.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('farm_pdf_report', farm_id=farm.id) }}" class="btn btn-sm btn-agri-outline">
+                <i class="bi bi-file-earmark-pdf me-1"></i> PDF Dossier
+            </a>
+        </div>
+    </div>
+
+    <!-- Agronomic Irrigation Disclaimer -->
+    <div class="disclaimer-banner mb-4">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+            <div>
+                <strong>FAO-56 Evapotranspiration Principle:</strong>
+                <span class="small">
+                    This advisory uses FAO-56 crop coefficient models ($ET_c = K_c \times ET_0$), factoring in growth stages, soil moisture depletion thresholds, recent rain, and forecasts. We never fabricate exact pumping minutes or quantities without calibrated flow sensors. Do not automate irrigation hardware in this decision-support version.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Input & Assessment Trigger Form -->
+        <div class="col-lg-5">
+            <div class="agri-card">
+                <div class="agri-card-header bg-light">
+                    <span class="fw-bold"><i class="bi bi-sliders text-primary me-2"></i>Irrigation Input Parameters</span>
+                </div>
+                <div class="agri-card-body">
+                    <form id="irrigationAssessForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Growth Stage</label>
+                            <select name="growth_stage" id="irrigStage" class="form-select form-select-sm">
+                                <option value="Immediately after planting" {% if farm.current_growth_stage == 'Immediately after planting' %}selected{% endif %}>Immediately after planting (Kc: 0.40)</option>
+                                <option value="Seedling growth" {% if farm.current_growth_stage == 'Seedling growth' %}selected{% endif %}>Seedling growth (Kc: 0.50)</option>
+                                <option value="Vegetative growth" {% if farm.current_growth_stage == 'Vegetative growth' %}selected{% endif %}>Vegetative growth (Kc: 0.80)</option>
+                                <option value="Flowering" {% if farm.current_growth_stage == 'Flowering' %}selected{% endif %}>Flowering – High Water Demand (Kc: 1.15)</option>
+                                <option value="Fruiting or grain formation" {% if farm.current_growth_stage == 'Fruiting or grain formation' %}selected{% endif %}>Fruiting or grain formation (Kc: 1.05)</option>
+                                <option value="Near harvest" {% if farm.current_growth_stage == 'Near harvest' %}selected{% endif %}>Near harvest (Kc: 0.55)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Soil Texture Type</label>
+                            <select name="soil_type" id="irrigSoil" class="form-select form-select-sm">
+                                <option value="Loamy" {% if farm.soil_type == 'Loamy' %}selected{% endif %}>Loamy (Balanced retention)</option>
+                                <option value="Sandy" {% if farm.soil_type == 'Sandy' %}selected{% endif %}>Sandy (Rapid drainage / low retention)</option>
+                                <option value="Sandy Loam" {% if farm.soil_type == 'Sandy Loam' %}selected{% endif %}>Sandy Loam</option>
+                                <option value="Clay Loam" {% if farm.soil_type == 'Clay Loam' %}selected{% endif %}>Clay Loam</option>
+                                <option value="Clay" {% if farm.soil_type == 'Clay' %}selected{% endif %}>Clay (Heavy / Slow drainage)</option>
+                            </select>
+                        </div>
+
+                        <!-- Soil Moisture Sensor Input -->
+                        <div class="mb-3 p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small fw-bold mb-0">Soil Moisture Sensor (%)</label>
+                                <span class="badge bg-secondary badge-pill-soft" id="sensorStatusBadge">Optional Probe</span>
+                            </div>
+                            <input type="number" step="0.1" name="soil_moisture" id="irrigMoisture" class="form-control form-control-sm" placeholder="e.g. 28.5 (Leave blank if no sensor)">
+                            <div class="form-text" style="font-size: 0.75rem;">
+                                If left blank, the system will label the advisory as an <b>estimate</b> and recommend physical inspection.
+                            </div>
+                        </div>
+
+                        <!-- Current Weather Snapshots -->
+                        <div class="mb-3">
+                            <span class="small text-uppercase fw-bold text-primary d-block mb-2">Field Weather Snapshot</span>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Temperature (°C)</label>
+                                    <input type="number" step="0.1" name="temperature" id="irrigTemp" class="form-control form-control-sm" value="26.0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Humidity (%)</label>
+                                    <input type="number" step="0.1" name="humidity" id="irrigHum" class="form-control form-control-sm" value="62.0">
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Past Rain 48h (mm)</label>
+                                    <input type="number" step="0.1" name="recent_rain_48h" id="irrigRecentRain" class="form-control form-control-sm" value="0.0">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-semibold">Forecast Rain 3d (mm)</label>
+                                    <input type="number" step="0.1" name="forecast_rain_next_3days" id="irrigForecastRain" class="form-control form-control-sm" value="4.0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-agri w-100" id="btnAssessIrrig">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            <i class="bi bi-droplet-fill me-1"></i> Compute Water Requirement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advisory Results Display -->
+        <div class="col-lg-7">
+            <div class="agri-card h-100">
+                <div class="agri-card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-clipboard2-pulse-fill text-primary me-2"></i>Irrigation Assessment Result</span>
+                    <span class="badge badge-pill-soft" id="dispBadgeStatus">
+                        {{ latest.status if latest else 'Pending Assessment' }}
+                    </span>
+                </div>
+                <div class="agri-card-body">
+                    <!-- Status Banner -->
+                    <div class="p-3 rounded-3 mb-4 border" id="statusBannerBox" style="background-color: #f8fafc;">
+                        <div class="small text-muted text-uppercase fw-bold mb-1">Advisory Status</div>
+                        <h4 class="fw-bold mb-2 text-dark" id="dispAdvisoryStatus">
+                            {{ latest.status if latest else 'Run assessment to evaluate current irrigation demand.' }}
+                        </h4>
+                        <p class="small mb-0 text-secondary" id="dispActionableGuidance">
+                            {{ latest.recommended_action if latest else 'Select stage and current weather parameters on the left and click Compute Water Requirement.' }}
+                        </p>
+                    </div>
+
+                    <!-- FAO Metrics Grid -->
+                    <div class="row g-2 mb-4 text-center">
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="small text-muted">Crop Coeff (Kc)</div>
+                                <strong class="fs-6 text-dark" id="dispKc">{{ latest.crop_coefficient_kc if latest else '--' }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="small text-muted">Reference ET0</div>
+                                <strong class="fs-6 text-dark" id="dispET0">{{ latest.et0_estimate ~ ' mm/day' if latest else '--' }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 bg-light">
+                                <div class="small text-muted">Next Check</div>
+                                <strong class="fs-6 text-dark" id="dispNextCheck">{{ latest.next_check_time or 'Within 24h' if latest else '--' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Rationale List -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-primary me-1"></i>Agronomic Rationale & Evidence:</h6>
+                        <ul class="list-group list-group-flush small" id="dispReasonsList">
+                            {% if latest and latest.detailed_reasons %}
+                                {% for r in latest.detailed_reasons %}
+                                    <li class="list-group-item px-0 py-2 text-muted">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>{{ r }}
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="list-group-item px-0 py-2 text-muted">Evidence reasons will populate after computation.</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <!-- Scientific Disclaimer Note -->
+                    <div class="disclaimer-banner p-2 px-3 small" style="font-size: 0.78rem;">
+                        <b>Field Verification:</b> If no physical soil sensor is detected, the advice is an estimate based on atmospheric demand. Always manually inspect root-zone soil (5-10 cm depth) before starting pumps.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('irrigationAssessForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnAssessIrrig');
+    const spinner = btn.querySelector('.spinner-border');
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    const form = document.getElementById('irrigationAssessForm');
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/api/farm/{{ farm.id }}/irrigation/assess', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            // Update UI elements
+            document.getElementById('dispAdvisoryStatus').textContent = data.status;
+            document.getElementById('dispActionableGuidance').textContent = data.recommended_action;
+            document.getElementById('dispKc').textContent = data.crop_coefficient_kc;
+            document.getElementById('dispET0').textContent = `${data.et0_estimate} mm/day`;
+            document.getElementById('dispNextCheck').textContent = data.next_check_time || '24h';
+
+            const badge = document.getElementById('dispBadgeStatus');
+            badge.textContent = data.status;
+            badge.className = `badge badge-pill-soft badge-soft-${data.badge_color || 'info'}`;
+
+            // Populate reasons
+            const reasonsList = document.getElementById('dispReasonsList');
+            reasonsList.innerHTML = '';
+            data.detailed_reasons.forEach(r => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item px-0 py-2 text-muted';
+                li.innerHTML = `<i class="bi bi-check-circle-fill text-success me-2"></i>${r}`;
+                reasonsList.appendChild(li);
+            });
+        } else {
+            alert(data.error || 'Failed to compute irrigation advice.');
+        }
+    } catch (err) {
+        alert('Network communication error.');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

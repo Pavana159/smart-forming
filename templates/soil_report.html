@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Soil Report – Smart Farming AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+            <h1 class="h3 brand-font mb-1"><i class="bi bi-layers-half text-success me-2"></i>Soil Assessment & Laboratory Report</h1>
+            <p class="text-muted small mb-0">Select either an optical field soil photo analysis or submit a chemical laboratory test report.</p>
+        </div>
+        <a href="{{ url_for('weather') }}" class="btn btn-sm btn-agri-outline mt-2 mt-md-0">
+            Next: Check Weather <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    <!-- Prominent Agronomic Truth & Scientific Disclaimer Banner -->
+    <div class="disclaimer-banner mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <div>
+                <strong class="text-dark d-block mb-1">Scientific Integrity Principle:</strong>
+                <span>
+                    A photograph cannot reliably determine exact nitrogen (N), phosphorus (P), potassium (K), pH, salinity, or other laboratory chemical measurements. Our image system analyzes visible characteristics only (surface coloration, texture roughness, and visible dampness). If exact soil chemistry is required, please enter or upload a laboratory soil test report below.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Tabbed/Card Options -->
+    <div class="row g-4">
+        <!-- OPTION A: Upload Soil Photo -->
+        <div class="col-lg-6">
+            <div class="agri-card h-100">
+                <div class="agri-card-header bg-light d-flex align-items-center justify-content-between">
+                    <span class="fw-bold text-dark"><i class="bi bi-camera-fill text-primary me-2"></i>Option A: Upload Soil Photo</span>
+                    <span class="badge badge-pill-soft badge-soft-info">Visible Characteristics Only</span>
+                </div>
+                <div class="agri-card-body">
+                    <p class="small text-muted mb-3">
+                        Take or upload a close-up photo of topsoil in your field. We will assess apparent soil texture, roughness, dominant color, and surface moisture sheen.
+                    </p>
+
+                    <form id="soilPhotoForm" enctype="multipart/form-data">
+                        <!-- Dropzone with Preview & Retake -->
+                        <div class="dropzone-box mb-3" id="soilPhotoDropzone">
+                            <input type="file" name="soil_photo" id="soilPhotoInput" class="d-none" accept=".jpg,.jpeg,.png,.webp">
+                            
+                            <div class="dropzone-placeholder" id="soilPhotoPlaceholder">
+                                <i class="bi bi-cloud-arrow-up-fill fs-1 text-mint d-block mb-2"></i>
+                                <h6 class="fw-bold mb-1">Click or Drag & Drop Soil Photo</h6>
+                                <p class="text-muted small mb-0">Supports JPEG, PNG, WebP (Max 16 MB)</p>
+                            </div>
+
+                            <div class="image-preview-container d-none" id="soilPhotoPreviewContainer">
+                                <img src="" alt="Soil Photo Preview" class="preview-image" id="soilPhotoPreview">
+                                <button type="button" class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 btn-retake">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Retake / Replace
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="soilPhotoAlert" class="alert d-none small mb-3"></div>
+
+                        <button type="submit" class="btn btn-agri w-100" id="soilPhotoSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                            <i class="bi bi-search me-1"></i> Analyze Visible Characteristics
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTION B: Enter or Upload Soil Test Report -->
+        <div class="col-lg-6">
+            <div class="agri-card h-100">
+                <div class="agri-card-header bg-light d-flex align-items-center justify-content-between">
+                    <span class="fw-bold text-dark"><i class="bi bi-file-earmark-medical-fill text-success me-2"></i>Option B: Soil Test Report</span>
+                    <span class="badge badge-pill-soft badge-soft-success">Laboratory Chemistry</span>
+                </div>
+                <div class="agri-card-body">
+                    <p class="small text-muted mb-3">
+                        Enter actual measured laboratory values or upload an agricultural lab soil health card (PDF or Text).
+                    </p>
+
+                    <form id="soilReportForm" enctype="multipart/form-data">
+                        <!-- Optional Report File Upload -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Upload Report File (Optional PDF / Text / Image)</label>
+                            <input type="file" name="report_file" id="reportFileInput" class="form-control form-control-sm" accept=".pdf,.txt,.png,.jpg,.jpeg">
+                            <div class="form-text">System will attempt automated text extraction to populate the fields below.</div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Nitrogen (N) <span class="text-muted">(kg/ha)</span></label>
+                                <input type="number" step="0.1" name="nitrogen" id="inputN" class="form-control form-control-sm" placeholder="e.g. 180">
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Phosphorus (P) <span class="text-muted">(kg/ha)</span></label>
+                                <input type="number" step="0.1" name="phosphorus" id="inputP" class="form-control form-control-sm" placeholder="e.g. 45">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-2">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Potassium (K) <span class="text-muted">(kg/ha)</span></label>
+                                <input type="number" step="0.1" name="potassium" id="inputK" class="form-control form-control-sm" placeholder="e.g. 150">
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Soil pH <span class="text-muted">(0 - 14)</span></label>
+                                <input type="number" step="0.1" name="ph" id="inputPH" class="form-control form-control-sm" placeholder="e.g. 6.5">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Soil Texture</label>
+                                <select name="soil_type" id="inputSoilType" class="form-select form-select-sm">
+                                    <option value="Loamy" selected>Loamy (Balanced)</option>
+                                    <option value="Sandy">Sandy</option>
+                                    <option value="Sandy Loam">Sandy Loam</option>
+                                    <option value="Clay Loam">Clay Loam</option>
+                                    <option value="Clay">Clay</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold">Organic Carbon <span class="text-muted">(% OC)</span></label>
+                                <input type="number" step="0.01" name="organic_carbon" id="inputOC" class="form-control form-control-sm" placeholder="e.g. 0.65">
+                            </div>
+                        </div>
+
+                        <div id="soilReportAlert" class="alert d-none small mb-3"></div>
+
+                        <button type="submit" class="btn btn-agri w-100" id="soilReportSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                            <i class="bi bi-clipboard2-check me-1"></i> Submit Soil Laboratory Record
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Handle Option A Photo Submission
+document.getElementById('soilPhotoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('soilPhotoSubmitBtn');
+    const alertBox = document.getElementById('soilPhotoAlert');
+    const spinner = btn.querySelector('.spinner-border');
+    const fileInput = document.getElementById('soilPhotoInput');
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alertBox.className = 'alert alert-warning small mb-3';
+        alertBox.textContent = 'Please choose or drag a soil photograph first.';
+        alertBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    alertBox.classList.add('d-none');
+
+    const formData = new FormData();
+    formData.append('soil_photo', fileInput.files[0]);
+
+    try {
+        const response = await fetch('/api/soil/photo', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = `/soil/result/${data.report_id}`;
+        } else {
+            alertBox.className = 'alert alert-danger small mb-3';
+            alertBox.textContent = data.error || 'Failed to analyze soil image.';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (err) {
+        alertBox.className = 'alert alert-danger small mb-3';
+        alertBox.textContent = 'Network or server communication error.';
+        alertBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+
+// Handle Option B Report Submission
+document.getElementById('soilReportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('soilReportSubmitBtn');
+    const alertBox = document.getElementById('soilReportAlert');
+    const spinner = btn.querySelector('.spinner-border');
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+    alertBox.classList.add('d-none');
+
+    const form = document.getElementById('soilReportForm');
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch('/api/soil/report', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = `/soil/result/${data.report_id}`;
+        } else {
+            alertBox.className = 'alert alert-danger small mb-3';
+            alertBox.textContent = data.error || 'Failed to process soil report.';
+            alertBox.classList.remove('d-none');
+        }
+    } catch (err) {
+        alertBox.className = 'alert alert-danger small mb-3';
+        alertBox.textContent = 'Network or server communication error.';
+        alertBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}
